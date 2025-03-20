@@ -15,6 +15,39 @@ import time
 MODEL_NAME = 'deepseek-r1:14b'
 MODEL_PRE_NAME = 'deepseek-r1:14b'
 
+def jsonAtual(session, description):
+    date = time.strftime("%Y-%m-%d")
+    current_time = time.strftime("%H:%M")
+    period = "manhã" if current_time < "12:00" else "tarde" if current_time < "18:00" else "noite"
+    day_of_week = time.strftime("%A")
+
+    day_of_week_mapping = {
+        "Monday": "Segunda-feira",
+        "Tuesday": "Terça-feira",
+        "Wednesday": "Quarta-feira",
+        "Thursday": "Quinta-feira",
+        "Friday": "Sexta-feira",
+        "Saturday": "Sábado",
+        "Sunday": "Domingo"
+    }
+    day_of_week = day_of_week_mapping.get(
+        time.strftime("%A"), "Dia desconhecido")
+
+    month = int(time.strftime("%m"))
+
+    season = "Outono" if 3 <= month <= 5 else "Inverno" if 6 <= month <= 8 else "Primavera" if 9 <= month <= 11 else "Verão"
+
+    json_today = {
+        "date": date,
+        "time": current_time,
+        "period": period,
+        "day_of_week": day_of_week,
+        "season": season,
+        "session": session,
+        "description": description
+    }
+    return json_today
+
 def criaJson(message, model='deepseek-r1:14b'):
     # Esse daqui parece precisar falar a data, pq acho que o deepseek no terminal fica preso no tempo, mas se falar ele acerta, mesma coisa com horário
     # Seria interessante testar trocar o boolean para analisar se foi um relato do dia ou uma pergunta, a ideia seria usar ele para ver se usaria embendings ou não
@@ -103,7 +136,6 @@ def criaJson(message, model='deepseek-r1:14b'):
     print(response)
     return response
 
-
 def ollama_stream_response(message, history):
     
     # Baixa os modelos (se não existirem)
@@ -165,6 +197,7 @@ def ollama_stream_response(message, history):
     messages.append({'role': 'user', 'content': prompt})
 
     response_text = "Pensando"
+    saida: str = ""
 
     stream = chat(
         model=MODEL_NAME,  # Altere para o modelo desejado
@@ -173,7 +206,9 @@ def ollama_stream_response(message, history):
     )
     for chunk in stream:
         response_text += chunk['message']['content']
-        yield response_text
+        if (response_text.find("</think>") != -1):
+            saida += chunk['message']['content']
+            yield saida
         # yield response_text
 
 
