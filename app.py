@@ -17,7 +17,7 @@ import time
 client = AsyncClient()
 
 
-def criaJson(message):
+def criaJson(message, model='deepseek-r1:14b'):
     # Esse daqui parece precisar falar a data, pq acho que o deepseek no terminal fica preso no tempo, mas se falar ele acerta, mesma coisa com horário
     # Seria interessante testar trocar o boolean para analisar se foi um relato do dia ou uma pergunta, a ideia seria usar ele para ver se usaria embendings ou não
     date = time.strftime("%Y-%m-%d")
@@ -87,14 +87,14 @@ def criaJson(message):
     Entrada: {message}
     )"""
     response: ChatResponse = chat(
-        model='deepseek-r1', messages=[{'role': 'user', 'content': prompt}], stream=False)
+        model=model, messages=[{'role': 'user', 'content': prompt}], stream=False)
     print(response['message']['content'])
     return response['message']['content']
 
 
-def ollama_stream_response(message, history):
+def ollama_stream_response(message, history, model='deepseek-r1:14b', model_pre='deepseek-r1:14b'):
 
-    strBusca = criaJson(message)
+    strBusca = criaJson(message, model=model_pre)
     resp_rag = rag.answer_question(strBusca)
     if not resp_rag:
         resp_rag = "Nenhuma informação encontrada."
@@ -148,7 +148,7 @@ def ollama_stream_response(message, history):
     response_text = "Pensando"
 
     stream = chat(
-        model="deepseek-r1",  # Altere para o modelo desejado
+        model=model,  # Altere para o modelo desejado
         messages=messages,
         stream=True
     )
