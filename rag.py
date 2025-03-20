@@ -7,6 +7,7 @@ import numpy as np
 collection = None
 
 def init_chroma():
+    global collection
     teste = open('Dataset.txt', 'r')
     dataset = json.load(teste)
 
