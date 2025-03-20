@@ -1,59 +1,53 @@
 import json
-import sys
 import ollama
 import chromadb
 import numpy as np
 
+class ChromaManager:
+    def __init__(self, chroma_path="chroma/", model_name="granite-embedding:278m"):
+        self.chroma_path = chroma_path
+        self.model_name = model_name
+        self.client = chromadb.PersistentClient(path=self.chroma_path)
+        self.collection = self.client.get_or_create_collection(name="temporal")
+        ollama.pull(self.model_name)
 
-def get_collection():
-    client = chromadb.PersistentClient(path="chroma/")
-    collection = client.get_or_create_collection(name="temporal")
-    return collection
+    def populateChroma(self, dataset_path='Dataset.txt'):
+        with open(dataset_path, 'r') as teste:
+            dataset = json.load(teste)
 
+        for d, i in enumerate(dataset):
+            a = f"""{{
+            "date":"{i['date']}",
+            "time":"{i['time']}",
+            "period":"{i['period']}",
+            "day_of_week":"{i['day_of_week']}",
+            "season":"{i['season']}",
+            "session":"{i['session']}"
+            }}
+            """
 
-def init_chroma():
-    teste = open('Dataset.txt', 'r')
-    dataset = json.load(teste)
+            description = i["description"]
 
-    collection = get_collection()
+            embedding = np.array(ollama.embed(
+                model=self.model_name, input=a)["embeddings"])
+            description_embedding = np.array(ollama.embed(
+                model=self.model_name, input=description)["embeddings"])
 
-    ollama.pull("granite-embedding:278m")
+            # Reduce weight of description by 80%
+            description_embedding *= 0.2
 
-    for d, i in enumerate(dataset):
-        a = f"""{{
-        "date":"{i['date']}",
-        "time":"{i['time']}",
-        "period":"{i['period']}",
-        "day_of_week":"{i['day_of_week']}",
-        "season":"{i['season']}",
-        "session":"{i['session']}"
-        }}
-        """
+            # Combine embeddings
+            final_embedding = embedding + description_embedding
 
-        description = i["description"]
+            self.collection.add(
+                ids=[str(d)],
+                embeddings=final_embedding.tolist(),
+                documents=[f"{a}\n\n {description}"]
+            )
 
-        embedding = np.array(ollama.embed(
-            model="granite-embedding:278m", input=a)["embeddings"])
-        description_embedding = np.array(ollama.embed(
-            model="granite-embedding:278m", input=description)["embeddings"])
-
-        # Reduzir peso da description em: reduzir 80%
-        description_embedding *= 0.2
-
-        # Combinar embeddings
-        final_embedding = embedding + description_embedding
-
-        collection.add(
-            ids=[str(d)],
-            embeddings=final_embedding.tolist(),
-            documents=[f"{a}\n\n {description}"]
-        )
-
-
-def answer_question(question):
-    collection = get_collection()
-    embeddingPergunta = ollama.embed(
-        model="granite-embedding:278m", input=question)["embeddings"]
-    memorias = collection.query(
-        query_embeddings=embeddingPergunta, n_results=6)["documents"]
-    return memorias
+    def answer_question(self, question):
+        embeddingPergunta = ollama.embed(
+            model=self.model_name, input=question)["embeddings"]
+        memorias = self.collection.query(
+            query_embeddings=embeddingPergunta, n_results=6)["documents"]
+        return memorias

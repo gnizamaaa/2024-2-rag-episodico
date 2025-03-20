@@ -7,15 +7,13 @@ import chromadb
 import onnxruntime
 import numpy as np
 import rag
-from ollama import AsyncClient
 import asyncio
 from ollama import chat
 from ollama import ChatResponse
 import time
 
-# Configuração do cliente Ollama
-client = AsyncClient()
-
+MODEL_NAME = 'deepseek-r1:14b'
+MODEL_PRE_NAME = 'deepseek-r1:14b'
 
 def criaJson(message, model='deepseek-r1:14b'):
     # Esse daqui parece precisar falar a data, pq acho que o deepseek no terminal fica preso no tempo, mas se falar ele acerta, mesma coisa com horário
@@ -66,10 +64,11 @@ def criaJson(message, model='deepseek-r1:14b'):
     Sabendo que o momento atual é {current_time}, dia {date}, em um(a) {day_of_week}, {season}, você deve inferir as informações restantes com base no contexto da entrada do usuário.
 
     Instruções:
-    1. Infira data/hora com base no contexto ou use a data atual se não especificado na entrada
-    2. Determine o período do dia com base na hora
-    3. Identifique o evento principal (ex: "Almoço", "Trabalho", "Lazer")
-    4. Formate a saída para que siga a estrutura do JSON
+    1. Infira a data do evento referenciado na entrada com base no contexto ou use a data atual se não especificado na entrada
+    2. Infira um horário aproximado com base no evento referenciado na entrada, ou use o horário atual se for um evento atual
+    3. Determine o período do dia com base na hora (manhã, tarde, noite)
+    4. Identifique o evento principal (ex: "Almoço", "Trabalho", "Lazer")
+    5. Formate a saída para que siga a estrutura do JSON
 
     Exemplo de entrada: "Hoje meu dia foi fenomenal, almocei macarrão"
     Exemplo de saída: 
@@ -89,13 +88,33 @@ def criaJson(message, model='deepseek-r1:14b'):
     response: ChatResponse = chat(
         model=model, messages=[{'role': 'user', 'content': prompt}], stream=False)
     print(response['message']['content'])
-    return response['message']['content']
+    
+    response = response['message']['content']
+    response = response.lstrip("</think>")
+    
+    try:
+        response = json.loads(response)
+        mes =  response['date'].split('-')[1] 
+        response['season'] = "Outono" if 3 <= int(mes) <= 5 else "Inverno" if 6 <= int(mes) <= 8 else "Primavera" if 9 <= int(mes) <= 11 else "Verão"
+        response['description'] = message
+    except:
+        print("Erro ao converter JSON")
+    
+    print(response)
+    return response
 
 
-def ollama_stream_response(message, history, model='deepseek-r1:14b', model_pre='deepseek-r1:14b'):
+def ollama_stream_response(message, history):
+    
+    # Baixa os modelos (se não existirem)
+    ollama.pull(MODEL_NAME)
+    ollama.pull(MODEL_PRE_NAME)
+    print("Modelos baixados")
+    # Inicializa o Chroma
+    ragClient = rag.ChromaManager()
 
-    strBusca = criaJson(message, model=model_pre)
-    resp_rag = rag.answer_question(strBusca)
+    strBusca = criaJson(message, model=MODEL_PRE_NAME)
+    resp_rag = ragClient.answer_question(strBusca)
     if not resp_rag:
         resp_rag = "Nenhuma informação encontrada."
     else:
@@ -148,7 +167,7 @@ def ollama_stream_response(message, history, model='deepseek-r1:14b', model_pre=
     response_text = "Pensando"
 
     stream = chat(
-        model=model,  # Altere para o modelo desejado
+        model=MODEL_NAME,  # Altere para o modelo desejado
         messages=messages,
         stream=True
     )
@@ -159,7 +178,7 @@ def ollama_stream_response(message, history, model='deepseek-r1:14b', model_pre=
 
 
 demo = gr.ChatInterface(
-    fn=ollama_stream_response,
+    fn= ollama_stream_response,
     type="messages"
 )
 
