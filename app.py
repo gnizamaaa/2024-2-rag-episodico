@@ -16,9 +16,40 @@ import time
 # Configuração do cliente Ollama
 client = AsyncClient()
 
+
 def criaJson(message):
     # Esse daqui parece precisar falar a data, pq acho que o deepseek no terminal fica preso no tempo, mas se falar ele acerta, mesma coisa com horário
     # Seria interessante testar trocar o boolean para analisar se foi um relato do dia ou uma pergunta, a ideia seria usar ele para ver se usaria embendings ou não
+    date = time.strftime("%Y-%m-%d")
+    current_time = time.strftime("%H:%M")
+    period = "manhã" if current_time < "12:00" else "tarde" if current_time < "18:00" else "noite"
+    day_of_week = time.strftime("%A")
+
+    day_of_week_mapping = {
+        "Monday": "Segunda-feira",
+        "Tuesday": "Terça-feira",
+        "Wednesday": "Quarta-feira",
+        "Thursday": "Quinta-feira",
+        "Friday": "Sexta-feira",
+        "Saturday": "Sábado",
+        "Sunday": "Domingo"
+    }
+    day_of_week = day_of_week_mapping.get(
+        time.strftime("%A"), "Dia desconhecido")
+
+    month = int(time.strftime("%m"))
+
+    season = "Outono" if 3 <= month <= 5 else "Inverno" if 6 <= month <= 8 else "Primavera" if 9 <= month <= 11 else "Verão"
+
+    json_today = {
+        "date": date,
+        "time": current_time,
+        "period": period,
+        "day_of_week": day_of_week,
+        "season": season,
+        "description": message
+    }
+
     prompt = f"""Você é um sistema de processamento de linguagem natural. 
     Sua tarefa é analisar a entrada do usuário, extrair as seguintes informações e retornar um JSON com a estrutura:
 
@@ -31,47 +62,40 @@ def criaJson(message):
         "session": "evento principal",
         "description": "resumo da atividade"
     }}
-
-    Além disso, retorne um booleano indicando se a data é passada.
+    
+    Sabendo que o momento atual é {current_time}, dia {date}, em um(a) {day_of_week}, {season}, você deve inferir as informações restantes com base no contexto da entrada do usuário.
 
     Instruções:
-    1. Infira data/hora com base no contexto ou use a data atual se não especificado
+    1. Infira data/hora com base no contexto ou use a data atual se não especificado na entrada
     2. Determine o período do dia com base na hora
-    3. Calcule dia da semana e estação do ano com base na data
-    4. Identifique o evento principal (ex: "Almoço", "Trabalho", "Lazer")
-    5. Para datas passadas, considere a data atual do sistema
+    3. Identifique o evento principal (ex: "Almoço", "Trabalho", "Lazer")
+    4. Formate a saída para que siga a estrutura do JSON
 
     Exemplo de entrada: "Hoje meu dia foi fenomenal, almocei macarrão"
     Exemplo de saída: 
     (
         {{
-            "date": "2024-05-15",
-            "time": "12:00",
-            "period": "tarde",
-            "day_of_week": "Quarta-feira",
-            "season": "Outono",
+            "date": {current_time},
+            "time": {date},
+            "period": {period},
+            "day_of_week": {day_of_week},
+            "season": {season},
             "session": "Almoço",
             "description": "Dia fenomenal com almoço de macarrão"
-        }},
-        <boolean>
-        False
-        <boolean>
+        }}
 
     Entrada: {message}
     )"""
-    messages = []
-    messages.append({'role': 'user', 'content': prompt})
-    response: ChatResponse = chat(model='deepseek-r1:14b', messages = messages)
+    response: ChatResponse = chat(
+        model='deepseek-r1', messages=[{'role': 'user', 'content': prompt}], stream=False)
     print(response['message']['content'])
+    return response['message']['content']
+
 
 def ollama_stream_response(message, history):
-    
-    criaJson(message)
-    """
-    Função geradora que envia a mensagem para o Ollama
-    e retorna a resposta em tempo real via streaming.
-    """
-    resp_rag = rag.answer_question(message)
+
+    strBusca = criaJson(message)
+    resp_rag = rag.answer_question(strBusca)
     if not resp_rag:
         resp_rag = "Nenhuma informação encontrada."
     else:
@@ -100,13 +124,13 @@ def ollama_stream_response(message, history):
     3. Gere uma **resposta direta** à pergunta, combinando informações dos embeddings mais relevantes.
     4. Retorne os **3 registros mais relevantes**, incluindo datas/horários associados a cada um.
     """
-    
-    # Mantém apenas as últimas 3 interações (cada interação tem [mensagem do usuário, resposta do assistente])
-    last_messages = history[-3:] if len(history) >= 3 else history
+
+    # # Mantém apenas as últimas 3 interações (cada interação tem [mensagem do usuário, resposta do assistente])
+    # last_messages = history[-3:] if len(history) >= 3 else history
 
     # Formata o histórico para a API do modelo
     messages = []
-    #print(history)
+    # print(history)
 
     messages = []
     # for i in range(0, len(last_messages), 2):  # Pega de 2 em 2
@@ -115,17 +139,16 @@ def ollama_stream_response(message, history):
     #         bot_reply = last_messages[i + 1]["content"].split("</think>")[1].strip()
     #         print(user_msg)
     #         print(bot_reply)
-            
+
     #         messages.append({"role": "user", "content": user_msg})
     #         messages.append({"role": "assistant", "content": bot_reply})
-
 
     messages.append({'role': 'user', 'content': prompt})
 
     response_text = "Pensando"
-    
+
     stream = chat(
-        model="deepseek-r1:14b",  # Altere para o modelo desejado
+        model="deepseek-r1",  # Altere para o modelo desejado
         messages=messages,
         stream=True
     )
@@ -134,16 +157,13 @@ def ollama_stream_response(message, history):
         yield response_text
         # yield response_text
 
-def random_response(message, history):
-    return rag.answer_question(message)[0]
-
 
 demo = gr.ChatInterface(
     fn=ollama_stream_response,
-    type="messages",
-    theme='gstaff/sketch'   
+    type="messages"
 )
 
-if __name__ == "__main__": 
-    rag.init_chroma()
-    demo.launch(share=False)  # Altere para share=True se quiser um link público
+if __name__ == "__main__":
+    # rag.init_chroma()
+    # Altere para share=True se quiser um link público
+    demo.launch(share=False)

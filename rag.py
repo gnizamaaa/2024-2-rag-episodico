@@ -4,17 +4,20 @@ import ollama
 import chromadb
 import numpy as np
 
-collection = None
+
+def get_collection():
+    client = chromadb.PersistentClient(path="chroma/")
+    collection = client.get_or_create_collection(name="temporal")
+    return collection
+
 
 def init_chroma():
-    global collection
     teste = open('Dataset.txt', 'r')
     dataset = json.load(teste)
 
-    client = chromadb.PersistentClient(path="chroma/")
-    collection = client.get_or_create_collection(name="temporal")
+    collection = get_collection()
 
-    ollama.pull("granite-embedding")
+    ollama.pull("granite-embedding:278m")
 
     for d, i in enumerate(dataset):
         a = f"""{{
@@ -26,11 +29,13 @@ def init_chroma():
         "session":"{i['session']}"
         }}
         """
-        
+
         description = i["description"]
 
-        embedding = np.array(ollama.embed(model="granite-embedding:278m", input=a)["embeddings"])
-        description_embedding = np.array(ollama.embed(model="granite-embedding:278m", input=description)["embeddings"])
+        embedding = np.array(ollama.embed(
+            model="granite-embedding:278m", input=a)["embeddings"])
+        description_embedding = np.array(ollama.embed(
+            model="granite-embedding:278m", input=description)["embeddings"])
 
         # Reduzir peso da description em: reduzir 80%
         description_embedding *= 0.2
@@ -46,6 +51,9 @@ def init_chroma():
 
 
 def answer_question(question):
-    embeddingPergunta = ollama.embed(model="granite-embedding:278m", input=question)["embeddings"]
-    memorias = collection.query(query_embeddings=embeddingPergunta, n_results=6)["documents"]
+    collection = get_collection()
+    embeddingPergunta = ollama.embed(
+        model="granite-embedding:278m", input=question)["embeddings"]
+    memorias = collection.query(
+        query_embeddings=embeddingPergunta, n_results=6)["documents"]
     return memorias
