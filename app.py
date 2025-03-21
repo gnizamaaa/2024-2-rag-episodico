@@ -1,3 +1,4 @@
+import re
 import gradio as gr
 import random
 import json
@@ -14,6 +15,7 @@ import time
 
 MODEL_NAME = 'deepseek-r1:14b'
 MODEL_PRE_NAME = 'deepseek-r1:14b'
+
 
 def jsonAtual(session, description):
     date = time.strftime("%Y-%m-%d")
@@ -46,7 +48,8 @@ def jsonAtual(session, description):
         "session": session,
         "description": description
     }
-    return json_today
+    return json.dumps(json_today)
+
 
 def criaJson(message, model='deepseek-r1:14b'):
     # Esse daqui parece precisar falar a data, pq acho que o deepseek no terminal fica preso no tempo, mas se falar ele acerta, mesma coisa com horário
@@ -54,7 +57,6 @@ def criaJson(message, model='deepseek-r1:14b'):
     date = time.strftime("%Y-%m-%d")
     current_time = time.strftime("%H:%M")
     period = "manhã" if current_time < "12:00" else "tarde" if current_time < "18:00" else "noite"
-    day_of_week = time.strftime("%A")
 
     day_of_week_mapping = {
         "Monday": "Segunda-feira",
@@ -120,27 +122,29 @@ def criaJson(message, model='deepseek-r1:14b'):
     )"""
     response: ChatResponse = chat(
         model=model, messages=[{'role': 'user', 'content': prompt}], stream=False)
-    print(response['message']['content'])
-    
+
     response = response['message']['content']
-    response = response.lstrip("</think>")
-    
+    response = response.split("</think>")[-1]
+
     try:
-        response = json.loads(response)
-        mes =  response['date'].split('-')[1] 
-        response['season'] = "Outono" if 3 <= int(mes) <= 5 else "Inverno" if 6 <= int(mes) <= 8 else "Primavera" if 9 <= int(mes) <= 11 else "Verão"
-        response['description'] = message
+        jsonResp = re.sub(r'`(?:json)?\n?|`', '', response).strip()
+        jsonResp = json.loads(jsonResp)
+        mes = jsonResp['date'].split('-')[1]
+        jsonResp['season'] = "Outono" if 3 <= int(mes) <= 5 else "Inverno" if 6 <= int(
+            mes) <= 8 else "Primavera" if 9 <= int(mes) <= 11 else "Verão"
+        jsonResp['description'] = message
     except:
         print("Erro ao converter JSON")
-    
-    print(response)
+
     return response
 
+
 def ollama_stream_response(message, history):
-    
+
     # Baixa os modelos (se não existirem)
     ollama.pull(MODEL_NAME)
     ollama.pull(MODEL_PRE_NAME)
+
     print("Modelos baixados")
     # Inicializa o Chroma
     ragClient = rag.ChromaManager()
@@ -176,32 +180,23 @@ def ollama_stream_response(message, history):
     4. Retorne os **3 registros mais relevantes**, incluindo datas/horários associados a cada um.
     """
 
-    # # Mantém apenas as últimas 3 interações (cada interação tem [mensagem do usuário, resposta do assistente])
-    # last_messages = history[-3:] if len(history) >= 3 else history
-
-    # Formata o histórico para a API do modelo
-    messages = []
-    # print(history)
-
-    messages = []
-    # for i in range(0, len(last_messages), 2):  # Pega de 2 em 2
-    #     if i + 1 < len(last_messages):  # Garante que há um par
-    #         user_msg = last_messages[i]["content"]
-    #         bot_reply = last_messages[i + 1]["content"].split("</think>")[1].strip()
-    #         print(user_msg)
-    #         print(bot_reply)
-
-    #         messages.append({"role": "user", "content": user_msg})
-    #         messages.append({"role": "assistant", "content": bot_reply})
-
-    messages.append({'role': 'user', 'content': prompt})
-
     response_text = "Pensando"
     saida: str = ""
 
+    ollama_history = []
+
+    for entry in history:
+        ollama_entry = {
+            'role': entry['role'],
+            'content': entry['content']
+        }
+        ollama_history.append(ollama_entry)
+
+    ollama_history.append({'role': 'assistant', 'content': prompt})
+
     stream = chat(
         model=MODEL_NAME,  # Altere para o modelo desejado
-        messages=messages,
+        messages=ollama_history,
         stream=True
     )
     for chunk in stream:
@@ -209,11 +204,61 @@ def ollama_stream_response(message, history):
         if (response_text.find("</think>") != -1):
             saida += chunk['message']['content']
             yield saida
-        # yield response_text
+
+    if (history):
+        ollama_history.append({'role': 'assistant', 'content': saida})
+
+        promptClass = f"""Você é um sistema de processamento de linguagem natural.
+        Sua tarefa é analisar a entrada do usuário em conjunto com a resposta do assistente e classificar se essa é uma memória digna de ser armazenada.
+        Caso seja, você deve fazer uma descrição da memória e 2 keywords que representem a memória.
+        Deverá então formatar sua resposta em um JSON com a seguinte estrutura:
+        
+        {{
+            "session": "keywords",
+            "description": "resumo da atividade"
+        }}
+        
+        Se não for uma memória relevante, você deve informar que a memória não é relevante no campo sessions.
+        Forme apenas uma memória, não é necessário formar várias memórias, caso tenha mais de um evento, faça uma memória mais longa contendo os eventos que julgar relevantes.
+        
+        São consideradas memórias relevantes eventos que sejam marcantes, importantes ou que possam ser úteis para o usuário em um futuro próximo, como por exemplo, um compromisso, uma tarefa, uma reunião, um jantar, uma refeição e outros.
+        
+        Entrada: {history}
+        """
+
+        response: ChatResponse = chat(
+            model=MODEL_PRE_NAME, messages=[{'role': 'user', 'content': promptClass}], stream=False)
+
+        response = response['message']['content']
+        response = response.split("</think>")[-1]
+        try:
+            jsonResp = re.sub(r'`(?:json)?\n?|`', '', response).strip()
+            jsonMemoria = json.loads(jsonResp)
+            print(jsonMemoria)
+            print(jsonMemoria['session'])
+            print(jsonMemoria['session'].find("relevante"))
+
+            relevante = True
+
+            for key in jsonMemoria['session']:
+                print(key)
+                temp = str(key)
+                if temp.find("relevante") != -1:
+                    relevante = False
+
+            if relevante == False:
+                print("Memória não relevante")
+            else:
+                print(jsonMemoria)
+                memoria = jsonAtual(
+                    jsonMemoria['session'], jsonMemoria['description'])
+                ragClient.add_memory(memoria)
+        except:
+            print("Erro ao converter JSON, memória provavelmente não relevante")
 
 
 demo = gr.ChatInterface(
-    fn= ollama_stream_response,
+    fn=ollama_stream_response,
     type="messages"
 )
 

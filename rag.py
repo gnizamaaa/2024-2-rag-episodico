@@ -3,6 +3,7 @@ import ollama
 import chromadb
 import numpy as np
 
+
 class ChromaManager:
     def __init__(self, chroma_path="chroma/", model_name="granite-embedding:278m"):
         self.chroma_path = chroma_path
@@ -51,3 +52,20 @@ class ChromaManager:
         memorias = self.collection.query(
             query_embeddings=embeddingPergunta, n_results=6)["documents"]
         return memorias
+
+    def add_memory(self, memory: str):
+
+        print("Adding memory")
+
+        embedding = ollama.embed(
+            model=self.model_name, input=memory)["embeddings"]
+
+        try:
+            self.collection.add(
+                ids=[str(self.collection.count)],
+                embeddings=embedding,
+                documents=memory
+            )
+        except (Exception) as e:
+            print("Erro ao adicionar memória")
+            print(e)
