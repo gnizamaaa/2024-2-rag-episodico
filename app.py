@@ -234,17 +234,11 @@ def ollama_stream_response(message, history):
         try:
             jsonResp = re.sub(r'`(?:json)?\n?|`', '', response).strip()
             jsonMemoria = json.loads(jsonResp)
-            print(jsonMemoria)
-            print(jsonMemoria['session'])
-            print(jsonMemoria['session'].find("relevante"))
 
             relevante = True
 
-            for key in jsonMemoria['session']:
-                print(key)
-                temp = str(key)
-                if temp.find("relevante") != -1:
-                    relevante = False
+            if jsonMemoria['session'].find("relevante") != -1:
+                relevante = False
 
             if relevante == False:
                 print("Memória não relevante")
