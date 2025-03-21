@@ -169,15 +169,21 @@ def ollama_stream_response(message, history):
     '''
     # Retirei para testes: 4. Retorne os **3 registros mais relevantes**, incluindo datas/horários associados a cada um.
     prompt = f"""
-    Com base nos embeddings gerados sobre a minha pergunta:  
-    Embeddings : {resp_rag}
+    Você é um assistente especializado em responder perguntas utilizando **exclusivamente** os trechos recuperados da base de conhecimento apresentada. Siga estas instruções rigorosamente:
 
-    - **Pergunta**: {message}  
-    - **Critérios**:  
-    1. Priorize embeddings que tenham **similaridade semântica** com palavras-chave ou contextos da pergunta.  
-    2. Calcule a **similaridade de cosseno** entre a pergunta e os embeddings para ranqueamento.  
-    3. Gere uma **resposta direta** à pergunta, combinando informações dos embeddings mais relevantes.
-    4. Retorne os **3 registros mais relevantes**, incluindo datas/horários associados a cada um.
+    **CONTEXTOS RECUPERADOS:**  
+    {resp_rag}
+
+    **PERGUNTA DO USUÁRIO:**  
+    {message}
+
+    **Instruções:**  
+    1. Analise semanticamente cada trecho e identifique os 3 registros mais relevantes para responder à pergunta.  
+    2. Utilize apenas as informações dos registros selecionados para formular uma resposta coerente e objetiva.  
+    3. Não inclua informações adicionais, nem exiba os trechos, datas ou qualquer metadado na resposta final.  
+    4. Se os registros não contiverem informação suficiente para responder à pergunta, responda “Não há informação suficiente na base para responder à pergunta.”
+
+    Forneça apenas a resposta final, sem prefixos ou listagens.
     """
 
     response_text = "Pensando"
