@@ -62,7 +62,7 @@ class ChromaManager:
 
         try:
             self.collection.add(
-                ids=[str(self.collection.count)],
+                ids=[str(self.collection.count())],
                 embeddings=embedding,
                 documents=memory
             )
