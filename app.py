@@ -168,28 +168,26 @@ def ollama_stream_response(message, history):
         "description": "answer"
     '''
     # Retirei para testes: 4. Retorne os **3 registros mais relevantes**, incluindo datas/horários associados a cada um.
+    prompt_sistema = f"""Você é um assistente de IA. Use o histórico de conversa (enviado automaticamente após este prompt) apenas se for relevante para responder à pergunta."""
     prompt = f"""
-    Você é um assistente especializado em responder perguntas utilizando **exclusivamente** os trechos recuperados da base de conhecimento apresentada. Siga estas instruções rigorosamente:
-
-    **CONTEXTOS RECUPERADOS:**  
+    ### CONTEXTOS RECUPERADOS (RAG)
     {resp_rag}
 
-    **PERGUNTA DO USUÁRIO:**  
+    ### PERGUNTA
     {message}
 
-    **Instruções:**  
-    1. Analise semanticamente cada trecho e identifique os 3 registros mais relevantes para responder à pergunta.  
-    2. Utilize apenas as informações dos registros selecionados para formular uma resposta coerente e objetiva.  
-    3. Não inclua informações adicionais, nem exiba os trechos, datas ou qualquer metadado na resposta final.  
-    4. Se os registros não contiverem informação suficiente para responder à pergunta, responda “Não há informação suficiente na base para responder à pergunta.”
+    ### TAREFA
+    1️⃣ Se a última mensagem **não for uma pergunta**, responda normalmente, ignorando contextos.
+    2️⃣ Se for pergunta, selecione até **3 contextos relevantes**, priorizando similaridade semântica e incluindo datas/horários.
+    3️⃣ Gere uma resposta **direta, coesa e concisa**, baseada somente nesses contextos.
+    4️⃣ Se **nenhum** contexto for relevante, responda: “Não encontrei informações suficientes para responder a essa pergunta.”
 
-    Forneça apenas a resposta final, sem prefixos ou listagens.
     """
 
     response_text = "Pensando"
     saida: str = ""
 
-    ollama_history = []
+    ollama_history = [{'role': 'system', 'content': prompt_sistema}]
 
     for entry in history:
         ollama_entry = {
@@ -198,7 +196,8 @@ def ollama_stream_response(message, history):
         }
         ollama_history.append(ollama_entry)
 
-    ollama_history.append({'role': 'assistant', 'content': prompt})
+    ollama_history.append({'role': 'user', 'content': prompt})
+    # print(ollama_history)
 
     stream = chat(
         model=MODEL_NAME,  # Altere para o modelo desejado
@@ -210,6 +209,8 @@ def ollama_stream_response(message, history):
         if (response_text.find("</think>") != -1):
             saida += chunk['message']['content']
             yield saida
+
+    # print("Pensamento: " + response_text.split("</think>")[0])
 
     if (history):
         ollama_history.append({'role': 'assistant', 'content': saida})
@@ -238,7 +239,9 @@ def ollama_stream_response(message, history):
         response = response['message']['content']
         response = response.split("</think>")[-1]
         try:
+            # print("Resposta:" + response)
             jsonResp = re.sub(r'`(?:json)?\n?|`', '', response).strip()
+            # print("Resposta cortada:" + jsonResp)
             jsonMemoria = json.loads(jsonResp)
 
             relevante = True

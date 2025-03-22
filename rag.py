@@ -50,7 +50,7 @@ class ChromaManager:
         embeddingPergunta = ollama.embed(
             model=self.model_name, input=question)["embeddings"]
         memorias = self.collection.query(
-            query_embeddings=embeddingPergunta, n_results=6)["documents"]
+            query_embeddings=embeddingPergunta, n_results=3)["documents"]
         return memorias
 
     def add_memory(self, memory: str):
