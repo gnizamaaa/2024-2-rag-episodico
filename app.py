@@ -197,7 +197,7 @@ def ollama_stream_response(message, history):
         ollama_history.append(ollama_entry)
 
     ollama_history.append({'role': 'user', 'content': prompt})
-    # print(ollama_history)
+    print(ollama_history)
 
     stream = chat(
         model=MODEL_NAME,  # Altere para o modelo desejado
@@ -210,9 +210,10 @@ def ollama_stream_response(message, history):
             saida += chunk['message']['content']
             yield saida
 
-    # print("Pensamento: " + response_text.split("</think>")[0])
+    print("Pensamento: " + response_text.split("</think>")[0])
 
     if (history):
+        # Essa linha ainda precisa existir?
         ollama_history.append({'role': 'assistant', 'content': saida})
 
         promptClass = f"""Você é um sistema de processamento de linguagem natural.
@@ -232,6 +233,7 @@ def ollama_stream_response(message, history):
         
         Entrada: {history}
         """
+        print(history)
 
         response: ChatResponse = chat(
             model=MODEL_PRE_NAME, messages=[{'role': 'user', 'content': promptClass}], stream=False)
@@ -239,9 +241,9 @@ def ollama_stream_response(message, history):
         response = response['message']['content']
         response = response.split("</think>")[-1]
         try:
-            # print("Resposta:" + response)
+            print("Resposta:" + response)
             jsonResp = re.sub(r'`(?:json)?\n?|`', '', response).strip()
-            # print("Resposta cortada:" + jsonResp)
+            print("Resposta cortada:" + jsonResp)
             jsonMemoria = json.loads(jsonResp)
 
             relevante = True
@@ -256,8 +258,11 @@ def ollama_stream_response(message, history):
                 memoria = jsonAtual(
                     jsonMemoria['session'], jsonMemoria['description'])
                 ragClient.add_memory(memoria)
-        except:
+                gr.Info("Memória salva")
+        except (Exception) as e:
             print("Erro ao converter JSON, memória provavelmente não relevante")
+            print(e)
+            gr.Warning("Memória não salva")
 
 
 demo = gr.ChatInterface(

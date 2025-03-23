@@ -47,6 +47,9 @@ class ChromaManager:
             )
 
     def answer_question(self, question):
+        
+        # TODO: Adicionar peso nos embeddings aqui.
+
         embeddingPergunta = ollama.embed(
             model=self.model_name, input=question)["embeddings"]
         memorias = self.collection.query(
@@ -57,14 +60,41 @@ class ChromaManager:
 
         print("Adding memory")
 
-        embedding = ollama.embed(
-            model=self.model_name, input=memory)["embeddings"]
+        try:
+            m = json.loads(memory)
+        except (Exception) as e:
+            print("Memória relevante, porém erro ao converter seu JSON")
+            print(memory)
+            print(e)
+
+        the_rest = f"""{{
+            "date":"{m['date']}",
+            "time":"{m['time']}",
+            "period":"{m['period']}",
+            "day_of_week":"{m['day_of_week']}",
+            "season":"{m['season']}",
+            "session":"{m['session']}"
+            }}
+            """
+
+        description = m["description"]
+
+        embedding = np.array(ollama.embed(
+            model=self.model_name, input=the_rest)["embeddings"])
+        description_embedding = np.array(ollama.embed(
+            model=self.model_name, input=description)["embeddings"])
+
+        # Reduce weight of description by 80%
+        description_embedding *= 0.2
+
+        # Combine embeddings
+        final_embedding = embedding + description_embedding
 
         try:
             self.collection.add(
                 ids=[str(self.collection.count())],
-                embeddings=embedding,
-                documents=memory
+                embeddings=final_embedding,
+                documents=[memory]
             )
         except (Exception) as e:
             print("Erro ao adicionar memória")
