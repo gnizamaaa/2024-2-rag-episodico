@@ -67,3 +67,12 @@ Para executar o aplicativo, utilize o seguinte comando na pasta que contém o ar
 
 Após um curto período de tempo, aparecerá um endereço no localhost ao acessá-lo será possível interagir com o modelo. 
 
+
+## Testes com a base de dados
+
+Aqui estão alguns testes para serem realizados com a base de dados já disponível:
+
+Q: "O que eu almocei no dia 26/02 as 12:00?"
+
+R: "No dia 26 de fevereiro, às 12:20, você almoçou em um pequeno restaurante italiano no centro da cidade. A comida incluiu massa fresca e cozida al dente acompanhada por vinho tinto encorpado, além de uma conversa agradável com um velho amigo."
+
