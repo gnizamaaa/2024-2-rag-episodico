@@ -17,43 +17,21 @@ class ChromaManager:
             dataset = json.load(teste)
 
         for d, i in enumerate(dataset):
-            a = f"""{{
-            "date":"{i['date']}",
-            "time":"{i['time']}",
-            "period":"{i['period']}",
-            "day_of_week":"{i['day_of_week']}",
-            "season":"{i['season']}",
-            "session":"{i['session']}"
-            }}
-            """
-
-            description = i["description"]
-
-            embedding = np.array(ollama.embed(
-                model=self.model_name, input=a)["embeddings"])
-            description_embedding = np.array(ollama.embed(
-                model=self.model_name, input=description)["embeddings"])
-
-            # Reduce weight of description by 80%
-            description_embedding *= 0.2
-
-            # Combine embeddings
-            final_embedding = embedding + description_embedding
+            
+            final_embedding, the_rest, description = self.embed_weighted(i)
 
             self.collection.add(
                 ids=[str(d)],
                 embeddings=final_embedding.tolist(),
-                documents=[f"{a}\n\n {description}"]
+                documents=[f"{the_rest}\n\n {description}"]
             )
 
     def answer_question(self, question):
-        
-        # TODO: Adicionar peso nos embeddings aqui.
 
-        embeddingPergunta = ollama.embed(
-            model=self.model_name, input=question)["embeddings"]
+        embedding_pergunta, *_ = self.embed_weighted(question)
+
         memorias = self.collection.query(
-            query_embeddings=embeddingPergunta, n_results=3)["documents"]
+            query_embeddings=embedding_pergunta, n_results=3)["documents"]
         return memorias
 
     def add_memory(self, memory: str):
@@ -66,7 +44,20 @@ class ChromaManager:
             print("Memória relevante, porém erro ao converter seu JSON")
             print(memory)
             print(e)
+        
+        embedding, *_ = self.embed_weighted(m)
 
+        try:
+            self.collection.add(
+                ids=[str(self.collection.count())],
+                embeddings=embedding,
+                documents=[memory]
+            )
+        except (Exception) as e:
+            print("Erro ao adicionar memória")
+            print(e)
+
+    def embed_weighted(self, m: dict):
         the_rest = f"""{{
             "date":"{m['date']}",
             "time":"{m['time']}",
@@ -89,13 +80,4 @@ class ChromaManager:
 
         # Combine embeddings
         final_embedding = embedding + description_embedding
-
-        try:
-            self.collection.add(
-                ids=[str(self.collection.count())],
-                embeddings=final_embedding,
-                documents=[memory]
-            )
-        except (Exception) as e:
-            print("Erro ao adicionar memória")
-            print(e)
+        return final_embedding, the_rest, description

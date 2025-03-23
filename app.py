@@ -136,7 +136,7 @@ def criaJson(message, model='deepseek-r1:14b'):
     except:
         print("Erro ao converter JSON")
 
-    return response
+    return jsonResp
 
 
 def ollama_stream_response(message, history):
@@ -149,8 +149,8 @@ def ollama_stream_response(message, history):
     # Inicializa o Chroma
     ragClient = rag.ChromaManager()
 
-    strBusca = criaJson(message, model=MODEL_PRE_NAME)
-    resp_rag = ragClient.answer_question(strBusca)
+    jsonBusca = criaJson(message, model=MODEL_PRE_NAME)
+    resp_rag = ragClient.answer_question(jsonBusca)
     if not resp_rag:
         resp_rag = "Nenhuma informação encontrada."
     else:
