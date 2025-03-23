@@ -16,14 +16,8 @@ Agora, certifique-se que está utilizando uma versão de Python 3.10 ou superior
 pip install --upgrade gradio
 ```
 ```sh
-pip install chromadb
-```
-```sh
-pip install ollama
-```
-```sh
-pip install numpy
-```
+pip install chromadb ollama numpy
+``` 
 
 Agora com as dependências instaladas, clone o repositório:
 
