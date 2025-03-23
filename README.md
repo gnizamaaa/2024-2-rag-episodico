@@ -47,6 +47,10 @@ ollama pull deepseek-r1:14b
 ollama pull granite-embedding:278m
 ```
 
+### Baixando a base de dados
+
+A base de dados já está inclusa no github do aplicativo, então ao clonar o repositório, ela já está disponível.
+
 ## Executando o aplicativo
 
 Em um terminal a parte, inicie o ollama:
