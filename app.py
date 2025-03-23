@@ -246,9 +246,13 @@ def ollama_stream_response(message, history):
             print("Resposta cortada:" + jsonResp)
             jsonMemoria = json.loads(jsonResp)
 
+            # As vezes, vem em formato de lista.
+            if isinstance(jsonMemoria['session'], list):
+                jsonMemoria['session'] = ", ".join(jsonMemoria['session'])
+
             relevante = True
 
-            if jsonMemoria['session'].find("relevante") != -1:
+            if "relevante" in jsonMemoria['session']:
                 relevante = False
 
             if relevante == False:
