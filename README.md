@@ -1,4 +1,7 @@
 # 2024-2-rag-episodico
+Antonio Lucio Braga Secchin, Bruno Lopes Altoé, Rhuan Garcia de Assis Teixeira
+
+"Explorando Retrieval-Augmented-Generation como solucão para Memória Episódica"
 
 ## Descrição
 
@@ -79,3 +82,7 @@ R: "No dia 26 de fevereiro, às 12:20, você almoçou em um pequeno restaurante 
 Q: "Como foi a manhã do dia 2025-02-27?"
 
 R: "No período da manhã do dia 2025-02-27, o despertador tocou com uma melodia suave, e o corpo se moveu com energia renovada após dormir bem. O café da manhã foi preparado com calma, incluindo ovos mexidos, torradas integrais e uma fruta fresca. A leitura do jornal acompanhou os primeiros raios de sol, misturando notícias ao aroma do café. A reunião de trabalho seguiu em um ambiente concentrado, com discussões detalhadas sobre o projeto."
+
+## Explorando Retrieval-Augmented-Generation como solucão para Memória Episódica
+
+É disponibilizado no repositório github um artigo chamado "Explorando Retrieval-Augmented-Generation como solucão para Memória Episódica", tanto em formato LaTeX como em PDF, apresentando e explicando a abordagem utilizada para a criação desse aplicativo, junto com trabalhos correlatos, os testes realizados e os resultados obtidos.
