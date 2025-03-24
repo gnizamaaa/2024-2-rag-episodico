@@ -53,8 +53,14 @@ Em um terminal a parte, inicie o ollama:
  ollama serve
 ```
 
-Para executar o aplicativo, utilize o seguinte comando na pasta que contém o arquivo app.py:
+Caso queira utilizar nosso dataset de memórias usado nos testes da aplicação, basta executar o aplicativo utilizando o comando abaixo, que irá preencher o banco de dados com nossas memórias
+```sh
+ python app.py test  
+```
 
+Esse comando irá preencher a base de conhecimento com nossas memórias e após isso aparecerá um endereço no localhost ao acessá-lo será possível interagir com o modelo. 
+
+Para apenas executar o aplicativo, utilize o seguinte comando na pasta que contém o arquivo app.py:
 ```sh
  python .\app.py  
 ```

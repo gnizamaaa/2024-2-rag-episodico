@@ -5,7 +5,6 @@ import json
 import sys
 import ollama
 import chromadb
-import onnxruntime
 import numpy as np
 import rag
 import asyncio
@@ -177,10 +176,10 @@ def ollama_stream_response(message, history):
     {message}
 
     ### TAREFA
-    1️⃣ Se a última mensagem **não for uma pergunta**, responda normalmente, ignorando contextos.
-    2️⃣ Se for pergunta, selecione até **3 contextos relevantes**, priorizando similaridade semântica e incluindo datas/horários.
-    3️⃣ Gere uma resposta **direta, coesa e concisa**, baseada somente nesses contextos.
-    4️⃣ Se **nenhum** contexto for relevante, responda: “Não encontrei informações suficientes para responder a essa pergunta.”
+    1. Se a última mensagem **não for uma pergunta**, responda normalmente, ignorando contextos.
+    2. Se for pergunta, selecione até **3 contextos relevantes**, priorizando similaridade semântica e incluindo datas/horários.
+    3. Gere uma resposta **direta, coesa e concisa**, baseada somente nesses contextos.
+    4. Se **nenhum** contexto for relevante, responda: “Não encontrei informações suficientes para responder a essa pergunta.”
 
     """
 
@@ -275,6 +274,13 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
+    
+    if len(sys.argv) > 1:
+        if ((sys.argv[1] == "test") | (sys.argv[1] == "teste")):
+            print("Incializando a base de dados com o dataset de testes")
+            manager = rag.ChromaManager()
+            manager.populateChroma()
+                
     # rag.init_chroma()
     # Altere para share=True se quiser um link público
     demo.launch(share=False)
