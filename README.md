@@ -1,4 +1,4 @@
-# 2024-2-rag-episodico
+![image](https://github.com/user-attachments/assets/169c470f-26f3-4f74-bf15-035a6e0fdf10)# 2024-2-rag-episodico
 
 ## Descrição
 
@@ -62,11 +62,14 @@ Para executar o aplicativo, utilize o seguinte comando na pasta que contém o ar
 Após um curto período de tempo, aparecerá um endereço no localhost ao acessá-lo será possível interagir com o modelo. 
 
 
-## Testes com a base de dados
+## Exemplos de entrada
 
-Aqui estão alguns testes para serem realizados com a base de dados já disponível:
+Aqui estão algumas entradas para serem perguntadas com a base de dados já disponível:
 
 Q: "O que eu almocei no dia 26/02 as 12:00?"
 
 R: "No dia 26 de fevereiro, às 12:20, você almoçou em um pequeno restaurante italiano no centro da cidade. A comida incluiu massa fresca e cozida al dente acompanhada por vinho tinto encorpado, além de uma conversa agradável com um velho amigo."
 
+Q: "Como foi a manhã do dia 2025-02-27?"
+
+R: "No período da manhã do dia 2025-02-27, o despertador tocou com uma melodia suave, e o corpo se moveu com energia renovada após dormir bem. O café da manhã foi preparado com calma, incluindo ovos mexidos, torradas integrais e uma fruta fresca. A leitura do jornal acompanhou os primeiros raios de sol, misturando notícias ao aroma do café. A reunião de trabalho seguiu em um ambiente concentrado, com discussões detalhadas sobre o projeto."
