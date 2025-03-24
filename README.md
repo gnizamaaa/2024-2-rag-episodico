@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/169c470f-26f3-4f74-bf15-035a6e0fdf10)# 2024-2-rag-episodico
+# 2024-2-rag-episodico
 
 ## Descrição
 
