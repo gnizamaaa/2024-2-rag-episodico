@@ -86,5 +86,4 @@ R: "No período da manhã do dia 2025-02-27, o despertador tocou com uma melodia
 ## Explorando Retrieval-Augmented-Generation como solucão para Memória Episódica
 
 É disponibilizado no repositório github um artigo chamado "Explorando Retrieval-Augmented-Generation como solucão para Memória Episódica", tanto em formato [LaTeX](./Relatório) como em [PDF](./Relatório.pdf), apresentando e explicando a abordagem utilizada para a criação desse aplicativo, junto com trabalhos correlatos, os testes realizados e os resultados obtidos.
-O pdf pode ser acessado em [Relatório em PDF](Relatório.pdf)
 
